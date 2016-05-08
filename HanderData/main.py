@@ -1,6 +1,7 @@
 #coding=utf-8
 import os
 
+#暂时用空格代替tab
 def tab():
     return "    "
 
