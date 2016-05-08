@@ -24,7 +24,7 @@ def mapL():
 
 
 
-def writeOneClass(dic, record):
+def writeClass(dic, record):
     #print dic
     c = {}
     for people in dic.keys():
@@ -72,8 +72,9 @@ if  __name__ == "__main__":
     #   },
     # }
     clas = listDirs["classes"]
+    peoples = {}
+    #key表示班级编号
     for key in clas.keys():
-        peoples = {}
         if key == "readme":
             continue
         classContentFile = open(listDirs["classes"][key])
@@ -81,19 +82,78 @@ if  __name__ == "__main__":
         courseName = lines[0].strip()
         homeworkSource = lines[1].strip()
         examSource = lines[2].strip()
+        #line表示学生id
         for line in lines[3:]:
             line = line.strip()
-            peoples[line] = {}
-            peoples[line]["selfId"] = line
-            peoples[line]["classId"] = key
+            #可能有同学生id不同班级id, 还是合并算了
+            # line =  line + key
+            if not peoples.has_key(line):
+                peoples[line] = {}
+            if not peoples[line].has_key("selfId"):
+                peoples[line]["selfId"] = line
+            if peoples[line].has_key("classId"):
+                peoples[line]["classId"] += "-" + key
+            else:
+                peoples[line]["classId"] = key
+
             if courseName == "程序设计 (II)":
                 peoples[line]["courseCode2"] = courseName
-            else:
-                peoples[line]["courseCode2"] = "not exist"
             if courseName == "程序设计 (I)":
                 peoples[line]["courseCode1"] = courseName
+            if  peoples[line].has_key("homeworkSource"):
+                peoples[line]["homeworkSource"] += "/" + homeworkSource
             else:
-                peoples[line]["courseCode1"] = "not exist"
-        writeOneClass(peoples, record)
+                peoples[line]["homeworkSource"] = homeworkSource
+            if peoples[line].has_key("examSource"):
+                peoples[line]["examSource"] += "/"  + examSource
+            else:
+                peoples[line]["examSource"] = examSource
+            #获得作业多少题,和平均分  homeworkFile 是一周作业的几道题的综合, 实际是assgnments的集合
+            homeworkFile = open(listDirs["homework"][homeworkSource])
+            homeworkFile_lines = homeworkFile.readlines()
+            homeworkFileTree = {}
+            for homeworkFile_line in homeworkFile_lines:
+                homeworkFile_line = homeworkFile_line.strip()
+                homeworkFileTree[homeworkFile_line] = {}
+                assignmentFile = open(listDirs["assignments"][homeworkFile_line])
+                assignmentFile_lines = assignmentFile.readlines()
+                exerciseId = assignmentFile_lines[0].strip()
+                startTime = assignmentFile_lines[1].strip()
+                hardDue = assignmentFile_lines[2].strip()
+                softDue = assignmentFile_lines[3].strip()
+                homeworkFileTree[homeworkFile_line]['exerciseId'] = exerciseId
+                homeworkFileTree[homeworkFile_line]['assignmentId'] = exerciseId
+                homeworkFileTree[homeworkFile_line]['startTime'] = startTime
+                homeworkFileTree[homeworkFile_line]['hardDue'] = hardDue
+                homeworkFileTree[homeworkFile_line]['softDue'] = softDue
+                if homeworkFileTree[homeworkFile_line].has_key("count"):
+                    homeworkFileTree[homeworkFile_line]["count"] += 1
+                else:
+                    homeworkFileTree[homeworkFile_line]["count"] = 1
+                assignmentFile.close()
+
+            allCount = 0
+            d = {}
+            if not peoples[line].has_key("assignmentids"):
+                peoples[line]["assignmentids"] = []
+            for homeworkFileTreeKey  in homeworkFileTree.keys():
+                allCount += homeworkFileTree[homeworkFileTreeKey]["count"]
+                peoples[line]["assignmentids"].append(homeworkFileTree[homeworkFileTreeKey]["assignmentId"])
+            if peoples[line].has_key("homeworkAllNum"):
+                peoples[line]["homeworkAllNum"] += allCount
+            else:
+                peoples[line]["homeworkAllNum"] = allCount
+            homeworkFile.close()
         classContentFile.close()
+        # 至此得到基本数据
+        # submissionBests = {}
+        # for submissionKey in listDirs['submissions'].keys():
+        #     submissionsFile = open(listDirs['submissions'][submissionKey])
+        #     submissionsFileLines = submissionsFile.readlines()
+        #     studentId = submissionsFileLines[0].strip()
+        #     assignmentId = submissionsFileLines[1].strip()
+        #     submitTime = submissionsFileLines[2].strip()
+        #     score = submissionsFileLines[3].strip()
+        #     submissionsFile.close()
+    writeClass(peoples, record)
     record.close()
