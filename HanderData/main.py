@@ -3,7 +3,7 @@ import os
 
 #暂时用空格代替tab
 def tab():
-    return "    "
+    return "    " + "    " + "    "
 
 def mapL():
     mapList = [
@@ -30,9 +30,9 @@ def writeClass(dic, record):
     for people in dic.keys():
         for item in mapL():
             if dic[people].has_key(item):
-                record.write(('{0: ^' + str(len(item)) + '}').format(dic[people][item]) + tab())
+                record.write(('{0: <' + str(len(item)) + '}').format(dic[people][item])  + tab())
             else:
-                record.write(('{0: ^' + str(len(item)) + '}').format("") + tab())
+                record.write(('{0: <' + str(len(item)) + '}').format("")  + tab())
         record.write("\n")
 
 
@@ -145,15 +145,47 @@ if  __name__ == "__main__":
                 peoples[line]["homeworkAllNum"] = allCount
             homeworkFile.close()
         classContentFile.close()
-        # 至此得到基本数据
-        # submissionBests = {}
-        # for submissionKey in listDirs['submissions'].keys():
-        #     submissionsFile = open(listDirs['submissions'][submissionKey])
-        #     submissionsFileLines = submissionsFile.readlines()
-        #     studentId = submissionsFileLines[0].strip()
-        #     assignmentId = submissionsFileLines[1].strip()
-        #     submitTime = submissionsFileLines[2].strip()
-        #     score = submissionsFileLines[3].strip()
-        #     submissionsFile.close()
+
+    # 这里存在问题,因为 这里包含平常作业和考试作业
+    #
+    # 的提交,所以还要分开
+    submissionBests = {}
+    for submissionKey in listDirs['submissions'].keys():
+        if submissionKey == "readme":
+            continue
+        submissionsFile = open(listDirs['submissions'][submissionKey])
+        submissionsFileLines = submissionsFile.readlines()
+        studentId = submissionsFileLines[0].strip()
+        assignmentId = submissionsFileLines[1].strip()
+        submitTime = submissionsFileLines[2].strip()
+        score = submissionsFileLines[3].strip()
+        if score.isdigit():
+            score = int(score)
+        else:
+            score = 0
+        if not submissionBests.has_key(studentId):
+            submissionBests[studentId] = {}
+        if not submissionBests[studentId].has_key(assignmentId):
+            submissionBests[studentId][assignmentId] = {}
+        if not submissionBests[studentId][assignmentId].has_key("score"):
+            submissionBests[studentId][assignmentId]["score"] = score
+        else:
+            if submissionBests[studentId][assignmentId]["score"] < score:
+                submissionBests[studentId][assignmentId]["score"] = score
+                submissionBests[studentId][assignmentId][submitTime] = submitTime
+        submissionsFile.close()
+
+    for studentKey in peoples.keys():
+        score = 0.0
+        num = 0
+        if not submissionBests.has_key(studentKey):
+            continue
+        for assignmentKey in submissionBests[studentKey].keys():
+            num = num + 1
+            score = score + submissionBests[studentKey][assignmentKey]["score"]
+        meanScore = score / num
+        peoples[studentKey]["homeworkYourMeanScore"] = meanScore
+        peoples[studentKey]["homeworkYourNum"] = num
+
     writeClass(peoples, record)
     record.close()
